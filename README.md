@@ -112,13 +112,19 @@ gtkterm (optional, is used for reviewing serial output for debugging):
 
 
 	Description:
+
 		 ESPTOOL_PATH 		Path to esptool.py-file (used for flashing program at esp-chip)
+
 		 CROSSCOMPILER_PATH 	Path to cross-compiler (included in esp-open-sdk)
+
 		 PORT 			Link to Serial-Port, which is used for flashing esp-chip		 
+
 		 SDK_PATH 		Path to esp-open-sdk
+
 		 START_UART_AFTERWARDS	Start gtkterm after successful code-compiling. If gtkterm is not available, set this parameter to 0
 
-		 All other values are project-related and should not be changed!
+
+	All other values are project-related and should not be changed!
 		
 
 4. Connect esp-chip to computer
