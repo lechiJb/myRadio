@@ -84,6 +84,8 @@ gtkterm (optional, is used for reviewing serial output for debugging):
 2. Clone this repository to your local computer
 
 3. Edit following file “<path_to_repository>/mp3/compile-script.sh” by using a standard-editor like gedit or notepad++. Following entries must be adjusted:
+		
+		
 		#-----------General settings -------------------
 		ESPTOOL_PATH=/home/christian/Dokumente/esp8266/esp-open-sdk/esptool/esptool.py
 		CROSSCOMPILER_PATH=/home/christian/Dokumente/esp8266/esp-open-sdk/xtensa-lx106-elf/bin
