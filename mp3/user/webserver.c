@@ -205,6 +205,7 @@ int parseCommand(char*path, int path_len){
 		if(value_len >= 1){
 			//Get set channel count
 			int count = ((int)value[0]) - 48;
+			printf("Set to value %d\n", count);
 			if(value_len > 1){
 				int second = ((int)value[1]) - 48;
 				count *= 10;
@@ -212,6 +213,10 @@ int parseCommand(char*path, int path_len){
 			}		
 
 			ret = channel_setStreamCount(count);
+			
+			channel_read();
+			channel_setCurrentStream(channel_getStreamCounter());
+
 		}
 
 	}
@@ -334,13 +339,27 @@ void ICACHE_FLASH_ATTR tskserver(void *pvParameters) {
 	struct sockaddr addr_client;
 	socklen_t sock_len = sizeof(struct sockaddr);
 
+
+	struct timeval tv;
+        tv.tv_sec = 100;
+        tv.tv_usec=0;
+        ret = setsockopt(socket_server, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	if(ret != 0)
+        {
+		getsockopt(socket_server, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
+		close(socket_server);
+		printf("webserver - ERR setsockopt err= %d\n", err_return);
+		vTaskDelete(NULL);
+        }
+
+
 	//Bind socket to port
 	ret = bind(socket_server, (struct sockaddr *)(&addr), sizeof(struct sockaddr));
 	if(ret != 0){
 		getsockopt(socket_server, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
 		close(socket_server);
 		printf("webserver - ERR bind err= %d\n", err_return);
-		vTaskDelete(NULL);;
+		vTaskDelete(NULL);
 	}
 
 	//Listen to port...
@@ -359,87 +378,92 @@ void ICACHE_FLASH_ATTR tskserver(void *pvParameters) {
 		//accept connection
 		int socket_client = accept(socket_server, (struct sockaddr *)(&addr_client), (socklen_t *)&sock_len);
 		printf("webserver - Connection accepted\n");
-
-		//receive data
-		printf("webserver - Wait for data...\n");
-		int rcv_len = recv(socket_client, wbuf, MAX_SERVER_BUFF, 0);
 		
-		if(rcv_len > 0){			
-			//Check HTTP request for path
-			int i;
-			int i_start = 0;
-			int i_end = 0;
-			printf("webserver - Data len %d:\n", rcv_len);
-			for(i=0; i < rcv_len; i++){
+		if(socket_client >= 0){	
 
-				if(wbuf[i] != '\r') printf("%c", wbuf[i]);	
-			
-				if(wbuf[i] == '/') {
-					i_start = i+1;
-				}				
-				else if(wbuf[i] == ' '  &&  i_start != 0) {
-					i_end = i;
-					break;
-				}	
+			//receive data
+			printf("webserver - Wait for data...\n");
+			int rcv_len = recv(socket_client, wbuf, MAX_SERVER_BUFF, 0);
 		
-			}
-			printf("\nDataEnd\n");
+			if(rcv_len > 0){			
+				//Check HTTP request for path
+				int i;
+				int i_start = 0;
+				int i_end = 0;
+				printf("webserver - Data len %d:\n", rcv_len);
+				for(i=0; i < rcv_len; i++){
 
-
-			//get command
-			int cmd_len = i_end - i_start;
-			char* command = wbuf + i_start;
+					if(wbuf[i] != '\r') printf("%c", wbuf[i]);	
 			
-			//parse command
-			int ret = parseCommand(command, cmd_len);
+					if(wbuf[i] == '/') {
+						i_start = i+1;
+					}				
+					else if(wbuf[i] == ' '  &&  i_start != 0) {
+						i_end = i;
+						break;
+					}	
+		
+				}
+				printf("\nDataEnd\n");
 
-			//Send back response...
-			if(writeResponse(socket_client) < 0){
-				getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
-				close(socket_client);
-				printf("webserver - ERR wirte response, err= %d\n", err_return);
-				continue;
-			}
 
+				//get command
+				int cmd_len = i_end - i_start;
+				char* command = wbuf + i_start;
+			
+				//parse command
+				int ret = parseCommand(command, cmd_len);
 
-			//Check, if main-page, NOK-page or OK-page is required
-			if(ret == 99  ||  cmd_len == 0){
-				//HTML-Homepage
-				if(writeHTMLCode(socket_client) < 0){
+				//Send back response...
+				if(writeResponse(socket_client) < 0){
 					getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
 					close(socket_client);
 					printf("webserver - ERR wirte response, err= %d\n", err_return);
 					continue;
 				}
-			}
-			else if(ret == 0){
-				//HTML - OK
-				if(writeHTMLCodeOK(socket_client) < 0){
-					getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
-					close(socket_client);
-					printf("webserver - ERR wirte response, err= %d\n", err_return);
-					continue;
+
+
+				//Check, if main-page, NOK-page or OK-page is required
+				if(ret == 99  ||  cmd_len == 0){
+					//HTML-Homepage
+					if(writeHTMLCode(socket_client) < 0){
+						getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
+						close(socket_client);
+						printf("webserver - ERR wirte response, err= %d\n", err_return);
+						continue;
+					}
 				}
-			}
-			else{
-				//HTML - NOK
-				if(writeHTMLCodeNOK(socket_client) < 0){
-					getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
-					close(socket_client);
-					printf("webserver - ERR wirte response, err= %d\n", err_return);
-					continue;
+				else if(ret == 0){
+					//HTML - OK
+					if(writeHTMLCodeOK(socket_client) < 0){
+						getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
+						close(socket_client);
+						printf("webserver - ERR wirte response, err= %d\n", err_return);
+						continue;
+					}
 				}
-			}
+				else{
+					//HTML - NOK
+					if(writeHTMLCodeNOK(socket_client) < 0){
+						getsockopt(socket_client, SOL_SOCKET, SO_ERROR, &err_return, (socklen_t *)&len);
+						close(socket_client);
+						printf("webserver - ERR wirte response, err= %d\n", err_return);
+						continue;
+					}
+				}
 			
 
+			}
+
+			//Restart on Channel-change...
 		}
 
-		//Restart on Channel-change...
 		channel_read();
 		if(channel_getStreamCounter() != channel_getCurrentStream()){
 			printf("webserver - Change to %d\n", channel_getStreamCounter());					
 			system_restart();		
 		}
+		
 		
 		closesocket(socket_client); 
 

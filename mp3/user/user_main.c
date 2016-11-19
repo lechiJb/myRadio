@@ -177,7 +177,7 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 		}
 
 		printf("reader - Start Reading\n");
-
+		t = 0;
 		do{
 			
 
@@ -215,8 +215,9 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 			
 
 			//Read channel-count every 7 read-steps to avoid laggy sound
-			t=(t+1)&7;
-			if(t == 0){
+			t+=1;
+			if(t >= 20){
+				t = 0;
 				printf("play - Buff: %d\n", spiRamFifoFill());
 
 				//change channel
@@ -250,7 +251,7 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 void ICACHE_FLASH_ATTR tskconnect(void *pvParameters) {
 	
 	//Wait a few secs for the stack to settle down
-	vTaskDelay(3000/portTICK_RATE_MS);
+	//vTaskDelay(3000/portTICK_RATE_MS);
 	
 
 	//Init Channels

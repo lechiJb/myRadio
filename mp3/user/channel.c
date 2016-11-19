@@ -9,7 +9,7 @@ static int currentStream=0;
 
 //Setup stream-settings
 #define MAX_ADC 1024
-#define OVERLAPP_ADC 15
+#define OVERLAPP_ADC 5
 
 
 //GetIP-Address
@@ -92,12 +92,18 @@ void copyFromUnicode(char* src, char* dst, int len){
 void channel_read() {
 
 	uint16 adc = system_adc_read();
+	printf("adc %d\n", adc);
 	uint16 limitMax = (1+currentStream) * MAX_ADC / streamCount + OVERLAPP_ADC;
 	uint16 limitMin = (currentStream * MAX_ADC / streamCount< OVERLAPP_ADC)? (0):(currentStream * MAX_ADC / streamCount- OVERLAPP_ADC);
+
+	if(limitMax > MAX_ADC)
+		limitMax = MAX_ADC-OVERLAPP_ADC;
 
 	if(adc < limitMin  ||  adc > limitMax)	{
 		streamCounter = adc / (MAX_ADC / streamCount);
 	}
+
+	printf("adc - new stream = %d\n", streamCounter);
 
 }
 
