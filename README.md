@@ -21,8 +21,9 @@ and simulation-files for calculating crossover network-components (see chapter â
 As esp-board I used following NodeMCU-Board:
 https://github.com/nodemcu/nodemcu-devkit-v1.0
 
-It has a esp12e-boad integrated, but this code runs on a esp12-board as well (other boards will also run, 
-but I only tested esp12e and esp12-boards).
+It has a esp12e-board integrated, but this code runs on a esp12f-board as well (other boards will also run, 
+but I only tested esp12e and esp12f-boards).
+Some users tested a esp12-board without success!!!!
 For MP3-decoding a chip called PCM5102 is used. There are many cheep breakout-boards available. 
 To select a stream-channel, a potentiometer is used. I used a linear potentiometer but a standard one is also fine.
 All other used components are optional and can be replaced or removed depending of your project!
